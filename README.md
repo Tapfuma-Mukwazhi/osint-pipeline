@@ -25,8 +25,10 @@ osint-pipeline/
 │   │   ├── nvd_api.py           # NVD CVE REST API
 │   │   └── packetstorm_scraper.py  # HTML scrape, disabled (ToS gate) -- see docstring
 │   ├── db/
-│   │   ├── schema.sql    # normalized storage schema
-│   │   └── models.py     # DB access layer (SQLite)
+│   │   ├── schema.sql          # normalized OLTP storage schema
+│   │   ├── warehouse.sql       # star-schema views (dims + facts) over the OLTP tables
+│   │   ├── trend_queries.sql   # example trend queries against the star schema
+│   │   └── models.py           # DB access layer (SQLite)
 │   └── pipeline.py       # orchestrator: fetch -> normalize -> dedupe -> store
 ├── tests/                # unit tests for parsing/dedupe logic, static fixtures only
 ├── notebooks/            # exploratory data analysis on collected data
@@ -34,11 +36,49 @@ osint-pipeline/
 └── data/                 # local SQLite DB (tracked -- see .gitignore comment)
 ```
 
+## Data warehouse layer
+
+`src/db/warehouse.sql` builds a small star schema on top of the normalized tables in `schema.sql`:
+three dimensions (`dim_source`, `dim_date`, `dim_tag`) and two fact views (`fact_observations` at
+one-row-per-observation grain, `fact_observation_tags` as a bridge table at one-row-per-tag grain,
+needed since tags are many-to-many and severity/keyword trends have to query at the tag level).
+
+These are SQL views, not physical tables that get copied and re-synced. For a dataset this size,
+materializing copies would mean building a refresh job and accepting a staleness window for no
+real query-speed benefit; views stay exactly in sync with the source tables for free, computed
+at query time. `init_db()` creates them automatically alongside the base schema, every run.
+
+`src/db/trend_queries.sql` has five example queries against this layer (collection volume by
+source/day, CVE severity trend by month, top keyword tags, source activity + tagging rate, and
+VirusTotal verdict trend) -- the kind of question that's a multi-table join every time against
+the normalized schema directly, and a couple of clean joins against the star schema. Run with:
+
+```bash
+sqlite3 data/osint.db < src/db/trend_queries.sql
+```
+
+One real bug this caught: the VirusTotal verdict query originally joined on
+`published_date_key`, which is `NULL` for every VirusTotal row (a domain reputation lookup has
+no meaningful "publish date") -- so it silently returned zero rows for a real, populated source.
+Fixed by joining on `collected_date_key` instead, which is the date dimension that's actually
+populated for that source. Caught by running the query against real data, not by reading the SQL.
+
 ## Why this design
 
 - **Collector interface is pluggable.** Every source implements the same `collect() -> list[Record]` shape, so adding a new source (paste sites, GitHub secret search, Shodan/Censys) means writing one new file, not touching the orchestrator.
 - **SQLite to start, Postgres-shaped schema.** Schema is written as plain SQL so it ports to Postgres without a rewrite if the dataset grows.
 - **Scheduling via GitHub Actions**, not just a script you remember to run — mirrors "reliable and efficient collection tooling" rather than a one-off scrape.
+
+## AI-assisted development
+
+Built with Claude as a coding partner, used deliberately rather than as an autocomplete. Roughly how the work split:
+
+- **Claude wrote:** the initial scaffolding, collector modules, SQLite schema, dedupe logic, test fixtures, and the GitHub Actions workflow, from a description of what each piece needed to do.
+- **I made the calls Claude couldn't:** which sources to target, when a "quick fix" (e.g. scripting around PacketStorm's ToS clickwrap) would cross an ethical line worth just... not crossing, and what actually belonged in a portfolio project versus scope creep.
+- **Real bugs were only caught by actually running things, not by code looking plausible.** Two examples that shaped how this project was built: `feedparser` silently returning zero entries on a network failure instead of raising (would've looked like "no news today" during a real outage) and an invalid NVD API parameter that 404'd on every live run while passing every local test, because the tests used static fixtures and never touched the real API. Both were only found by reading actual GitHub Actions logs after a live scheduled run, not by trusting a green checkmark. A job-level "success" can still hide a per-source failure -- that's a real lesson from this project, not a hypothetical one.
+- **The EDA notebook surfaced a second bug this way too:** fixing the NVD 404 by removing the bad parameter was correct, but it left results unsorted by recency -- something that only became visible once real data was actually analyzed, not before.
+
+The pattern worth naming: AI-assisted coding sped up the boilerplate, but every real bug in this project was found by testing against live systems and reading actual output, not by code review or by assuming a passing test suite meant the pipeline worked end to end.
 
 ## Setup
 
@@ -67,6 +107,6 @@ jupyter notebook notebooks/eda.ipynb
 - [x] HTML scraper, no feed/API source (PacketStorm) -- disabled after the source added a mandatory ToS clickwrap; a replacement scraping target is still needed
 - [x] Gated/authenticated API collector (VirusTotal domain reputation) -- requires your own free API key
 - [x] EDA notebook on collected data (`notebooks/eda.ipynb`) -- also surfaced a second real bug: removing the invalid `sortBy` param fixed the 404, but left NVD results unsorted by recency (this run's CVEs were all from 1999-2000). Tracked as a follow-up, not yet fixed.
-- [ ] Star-schema warehouse layer for trend queries
+- [x] Star-schema warehouse layer for trend queries (`src/db/warehouse.sql`, `src/db/trend_queries.sql`) -- caught a real bug where the VirusTotal verdict query silently returned zero rows by joining on a date field that's always NULL for that source
 - [ ] OSINT tooling wrapper
 - [ ] Safe Tor-based collector

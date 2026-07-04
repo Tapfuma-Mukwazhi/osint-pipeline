@@ -14,6 +14,7 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parents[2] / "data" / "osint.db"
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
+WAREHOUSE_PATH = Path(__file__).resolve().parent / "warehouse.sql"
 
 
 @dataclass
@@ -39,6 +40,11 @@ def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:
 
 def init_db(conn: sqlite3.Connection) -> None:
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
+        conn.executescript(f.read())
+    # Star-schema views (warehouse.sql) are built on top of the tables above,
+    # every run -- they're views, not materialized copies, so there's no
+    # separate sync/refresh step and no risk of them drifting from the data.
+    with open(WAREHOUSE_PATH, "r", encoding="utf-8") as f:
         conn.executescript(f.read())
     conn.commit()
 
