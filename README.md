@@ -14,6 +14,7 @@ This project only collects from public sources, and only where doing so doesn't 
 | `nvd_api.py` | API | NVD CVE 2.0 REST API | No key required for light/scheduled use |
 | `packetstorm_scraper.py` | Scrape | PacketStorm Security file listing | Disabled -- source now requires clickwrap ToS agreement site-wide; see module docstring |
 | `vt_domain_lookup.py` | API (gated) | VirusTotal domain reputation | Requires a free API key -- demonstrates authenticated/closed-source handling. Setup in the module docstring. |
+| `crtsh_subdomains.py` | API (OSINT tool technique) | crt.sh certificate transparency logs | Passive subdomain enumeration -- reimplements the technique behind theHarvester's `crtsh` module directly, rather than depending on that tool's own installation. See module docstring for why. |
 
 ## Architecture
 
@@ -23,7 +24,8 @@ osint-pipeline/
 │   ├── collectors/              # one module per source, each yields normalized records
 │   │   ├── rss_feeds.py         # SANS ISC RSS
 │   │   ├── nvd_api.py           # NVD CVE REST API
-│   │   └── packetstorm_scraper.py  # HTML scrape, disabled (ToS gate) -- see docstring
+│   │   ├── packetstorm_scraper.py  # HTML scrape, disabled (ToS gate) -- see docstring
+│   │   └── crtsh_subdomains.py  # certificate-transparency subdomain enumeration (OSINT technique)
 │   ├── db/
 │   │   ├── schema.sql          # normalized OLTP storage schema
 │   │   ├── warehouse.sql       # star-schema views (dims + facts) over the OLTP tables
@@ -108,5 +110,5 @@ jupyter notebook notebooks/eda.ipynb
 - [x] Gated/authenticated API collector (VirusTotal domain reputation) -- requires your own free API key
 - [x] EDA notebook on collected data (`notebooks/eda.ipynb`) -- also surfaced a second real bug: removing the invalid `sortBy` param fixed the 404, but left NVD results unsorted by recency (this run's CVEs were all from 1999-2000). Tracked as a follow-up, not yet fixed.
 - [x] Star-schema warehouse layer for trend queries (`src/db/warehouse.sql`, `src/db/trend_queries.sql`) -- caught a real bug where the VirusTotal verdict query silently returned zero rows by joining on a date field that's always NULL for that source
-- [ ] OSINT tooling wrapper
+- [x] OSINT tooling wrapper (`crtsh_subdomains.py`) -- passive subdomain enumeration via certificate transparency logs, the same technique theHarvester's `crtsh` module uses. Built from scratch instead of wrapping the actual theHarvester binary, since the PyPI package for it is a stale non-functional placeholder and the real tool isn't designed for headless CI use -- see the module docstring for the full reasoning.
 - [ ] Safe Tor-based collector

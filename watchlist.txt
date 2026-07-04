@@ -1,10 +1,12 @@
-# Domains to check against VirusTotal's domain reputation API.
-# One per line. Lines starting with # are ignored.
+# Domains to look up -- shared by both domain-focused collectors:
+# vt_domain_lookup.py (reputation) and crtsh_subdomains.py (subdomain
+# enumeration via certificate transparency). One per line. Lines starting
+# with # are ignored.
 #
-# Ships with a couple of well-known benign domains so the collector runs
+# Ships with a couple of well-known benign domains so both collectors run
 # out of the box without needing a real watchlist -- swap these for
-# domains you actually want reputation data on (e.g. ones pulled from
-# other collectors' output) once you're customizing this.
+# domains you actually want data on (e.g. ones pulled from other
+# collectors' output) once you're customizing this.
 
 example.com
 wikipedia.org

@@ -16,7 +16,7 @@ import logging
 import sys
 from dataclasses import dataclass
 
-from src.collectors import nvd_api, packetstorm_scraper, rss_feeds, vt_domain_lookup
+from src.collectors import crtsh_subdomains, nvd_api, packetstorm_scraper, rss_feeds, vt_domain_lookup
 from src.db.models import get_connection, get_or_create_source, init_db, insert_observation
 
 logging.basicConfig(
@@ -29,7 +29,7 @@ log = logging.getLogger("pipeline")
 # vt_domain_lookup requires VT_API_KEY to be set (see that module's
 # docstring for setup). If it's missing, run_collector's per-source error
 # isolation logs it and moves on -- the rest of the pipeline still runs.
-COLLECTORS = [rss_feeds, nvd_api, packetstorm_scraper, vt_domain_lookup]
+COLLECTORS = [rss_feeds, nvd_api, packetstorm_scraper, vt_domain_lookup, crtsh_subdomains]
 
 
 @dataclass
