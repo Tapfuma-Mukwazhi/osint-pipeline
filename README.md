@@ -53,13 +53,20 @@ python -m src.pipeline
 
 Data lands in `data/osint.db`. Query it directly with any SQLite client, or open `notebooks/eda.ipynb` for exploratory analysis.
 
+To run the notebook (separate, heavier deps -- not needed for the pipeline itself):
+
+```bash
+pip install -r requirements-notebook.txt
+jupyter notebook notebooks/eda.ipynb
+```
+
 ## Roadmap
 
 - [x] RSS collector (SANS ISC)
 - [x] API collector (NVD CVE) -- fixed a live-only bug where an invalid `sortBy` param caused every run to 404
 - [x] HTML scraper, no feed/API source (PacketStorm) -- disabled after the source added a mandatory ToS clickwrap; a replacement scraping target is still needed
 - [x] Gated/authenticated API collector (VirusTotal domain reputation) -- requires your own free API key
-- [ ] EDA notebook on collected data
+- [x] EDA notebook on collected data (`notebooks/eda.ipynb`) -- also surfaced a second real bug: removing the invalid `sortBy` param fixed the 404, but left NVD results unsorted by recency (this run's CVEs were all from 1999-2000). Tracked as a follow-up, not yet fixed.
 - [ ] Star-schema warehouse layer for trend queries
 - [ ] OSINT tooling wrapper
 - [ ] Safe Tor-based collector
