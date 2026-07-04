@@ -1,0 +1,10 @@
+# Domains to check against VirusTotal's domain reputation API.
+# One per line. Lines starting with # are ignored.
+#
+# Ships with a couple of well-known benign domains so the collector runs
+# out of the box without needing a real watchlist -- swap these for
+# domains you actually want reputation data on (e.g. ones pulled from
+# other collectors' output) once you're customizing this.
+
+example.com
+wikipedia.org

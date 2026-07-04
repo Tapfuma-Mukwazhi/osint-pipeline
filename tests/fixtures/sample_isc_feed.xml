@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+<title>Test Feed</title>
+<item>
+  <title>New Ransomware Campaign Targets Healthcare via Phishing</title>
+  <link>https://isc.sans.edu/diary/rss/99999</link>
+  <guid>https://isc.sans.edu/diary/rss/99999</guid>
+  <description>A ransomware group used phishing emails with malicious attachments.</description>
+  <pubDate>Fri, 03 Jul 2026 10:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Routine Patch Notes</title>
+  <link>https://isc.sans.edu/diary/rss/99998</link>
+  <guid>https://isc.sans.edu/diary/rss/99998</guid>
+  <description>Nothing security relevant here.</description>
+  <pubDate>Thu, 02 Jul 2026 10:00:00 GMT</pubDate>
+</item>
+</channel></rss>

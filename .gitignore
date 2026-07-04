@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.env
+.pytest_cache/
+*.egg-info/
+
+# data/osint.db is intentionally tracked -- the scheduled GitHub Action
+# commits it back on each run, so the commit history itself is evidence
+# the automated pipeline is actually running. Keep local scratch DBs
+# (from ad-hoc testing) out with a different filename if you don't want
+# them tracked, e.g. data/scratch.db.
