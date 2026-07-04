@@ -1,17 +1,28 @@
 """Scraper collector: PacketStorm Security file listing.
 
-Unlike the RSS/API collectors, this pulls from a page with no feed or API --
-real HTML scraping with BeautifulSoup against the site's actual markup.
-robots.txt for this domain allows crawling (checked before writing this).
+STATUS: DISABLED as of the first live run (see collect() below). This is
+NOT the "selector needs updating" case the original docstring warned
+about -- PacketStorm now serves a mandatory clickwrap Terms of Service
+interstitial in front of all content (dated September 2025), and their
+Terms explicitly gate API access behind an individually-issued license
+key ("You may not resell or distribute API access to any third party
+without our express written permission"). A plain requests.get() call
+can't satisfy a consent flow, and writing code to silently bypass a
+clickwrap gate would violate both PacketStorm's terms and this project's
+own stated scope/ethics policy (README: "only collects where doing so
+doesn't violate the source's terms of service"). Confirmed by navigating
+to the live URL and observing the ToS interstitial directly, not by
+inference.
 
-Honesty note: scraper selectors are inherently more brittle than API/RSS
-parsing, because they depend on one site's current HTML structure instead
-of a stable published contract. If this collector returns zero records,
-the site's markup has likely changed since this was written -- inspect the
-live page and adjust _ENTRY_LINK_PATTERN / _parse_listing() below. That's
-normal scraper maintenance, not a sign the pipeline itself is broken --
-it's exactly the failure mode run_collector() in pipeline.py is built to
-isolate rather than let take down the whole run.
+_parse_listing() below is left intact and still passes its unit tests --
+the HTML-parsing logic itself was never the problem, and it's a
+reasonable starting point if this source is ever swapped for a
+scrapeable one with similar markup (dt/dd or li-based listing).
+
+Next step: replace SOURCE_URL (and likely _parse_listing) with a
+different scraping target that doesn't require a consent flow, rather
+than patching around this one. See osint-pipeline-project-log.docx for
+the fuller writeup of this decision.
 """
 
 from __future__ import annotations
@@ -74,7 +85,16 @@ def _parse_listing(html: str, base_url: str = SOURCE_URL) -> list[dict]:
 
 
 def collect(limit: int = 20) -> list[Record]:
-    resp = requests.get(SOURCE_URL, headers=HEADERS, timeout=30)
+    # Disabled deliberately -- see module docstring. Raising here (rather
+    # than silently returning []) keeps this visible in pipeline logs
+    # instead of quietly looking like "the site just had nothing new."
+    raise RuntimeError(
+        "packetstorm collector disabled: the source now requires clickwrap "
+        "ToS agreement for all traffic, which this project won't script "
+        "around. Needs a replacement scraping target -- see module docstring."
+    )
+
+    resp = requests.get(SOURCE_URL, headers=HEADERS, timeout=30)  # unreachable, kept for when this is re-enabled against a new target
     resp.raise_for_status()
 
     entries = _parse_listing(resp.text)

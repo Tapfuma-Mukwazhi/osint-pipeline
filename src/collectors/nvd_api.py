@@ -36,7 +36,13 @@ def _severity_tags(cve: dict) -> list[str]:
 
 
 def collect(limit: int = 20) -> list[Record]:
-    params = {"resultsPerPage": limit, "sortBy": "publishDate"}
+    # NB: NVD's v2.0 API does not support a `sortBy` param -- an earlier
+    # version of this collector included one, which caused every live run
+    # to fail with a 404 (caught by pipeline.py's per-source error
+    # isolation, so it failed silently rather than breaking the whole run).
+    # Confirmed by testing the request directly: adding sortBy=publishDate
+    # 404s, removing it returns data normally.
+    params = {"resultsPerPage": limit}
     resp = requests.get(SOURCE_URL, params=params, headers=HEADERS, timeout=30)
     resp.raise_for_status()
     data = resp.json()

@@ -12,7 +12,7 @@ This project only collects from public sources, and only where doing so doesn't 
 |---|---|---|---|
 | `rss_feeds.py` | RSS | SANS Internet Storm Center | Daily handler diaries; structured, no auth |
 | `nvd_api.py` | API | NVD CVE 2.0 REST API | No key required for light/scheduled use |
-| `packetstorm_scraper.py` | Scrape | PacketStorm Security file listing | No feed/API for this source -- real HTML parsing |
+| `packetstorm_scraper.py` | Scrape | PacketStorm Security file listing | Disabled -- source now requires clickwrap ToS agreement site-wide; see module docstring |
 | `vt_domain_lookup.py` | API (gated) | VirusTotal domain reputation | Requires a free API key -- demonstrates authenticated/closed-source handling. Setup in the module docstring. |
 
 ## Architecture
@@ -23,7 +23,7 @@ osint-pipeline/
 │   ├── collectors/              # one module per source, each yields normalized records
 │   │   ├── rss_feeds.py         # SANS ISC RSS
 │   │   ├── nvd_api.py           # NVD CVE REST API
-│   │   └── packetstorm_scraper.py  # HTML scrape, no feed/API available
+│   │   └── packetstorm_scraper.py  # HTML scrape, disabled (ToS gate) -- see docstring
 │   ├── db/
 │   │   ├── schema.sql    # normalized storage schema
 │   │   └── models.py     # DB access layer (SQLite)
@@ -56,8 +56,8 @@ Data lands in `data/osint.db`. Query it directly with any SQLite client, or open
 ## Roadmap
 
 - [x] RSS collector (SANS ISC)
-- [x] API collector (NVD CVE)
-- [x] HTML scraper, no feed/API source (PacketStorm) -- selectors verified against a static fixture, not yet run against live markup; see the honesty note at the top of `packetstorm_scraper.py`
+- [x] API collector (NVD CVE) -- fixed a live-only bug where an invalid `sortBy` param caused every run to 404
+- [x] HTML scraper, no feed/API source (PacketStorm) -- disabled after the source added a mandatory ToS clickwrap; a replacement scraping target is still needed
 - [x] Gated/authenticated API collector (VirusTotal domain reputation) -- requires your own free API key
 - [ ] EDA notebook on collected data
 - [ ] Star-schema warehouse layer for trend queries
