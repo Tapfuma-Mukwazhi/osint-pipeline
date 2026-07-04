@@ -133,3 +133,32 @@ def test_collect_respects_max_lookups_per_run(sample_watchlist, monkeypatch):
 
     crtsh_subdomains.collect()
     assert queried == ["example.com"]
+
+
+# --- Retry behavior -----------------------------------------------------
+# crt.sh's first real live run (see README) failed with a 502 -- a known,
+# documented characteristic of crt.sh under load, not a bug in this
+# collector. These tests pin down the retry behavior added in response to
+# that real failure, without actually sleeping in the test suite.
+
+def test_fetch_with_retry_recovers_from_transient_502(monkeypatch):
+    monkeypatch.setattr(crtsh_subdomains.time, "sleep", lambda seconds: None)
+    responses = iter([FakeResponse({}, status_code=502), FakeResponse(SAMPLE_ENTRIES)])
+    monkeypatch.setattr(
+        crtsh_subdomains.requests, "get",
+        lambda url, params=None, headers=None, timeout=None: next(responses),
+    )
+
+    entries = crtsh_subdomains._fetch_with_retry("example.com")
+    assert entries == SAMPLE_ENTRIES
+
+
+def test_fetch_with_retry_raises_after_exhausting_attempts(monkeypatch):
+    monkeypatch.setattr(crtsh_subdomains.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(
+        crtsh_subdomains.requests, "get",
+        lambda url, params=None, headers=None, timeout=None: FakeResponse({}, status_code=502),
+    )
+
+    with pytest.raises(RuntimeError, match="crt.sh lookup"):
+        crtsh_subdomains._fetch_with_retry("example.com")
